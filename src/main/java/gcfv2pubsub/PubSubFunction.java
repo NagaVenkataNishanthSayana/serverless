@@ -32,7 +32,6 @@ import java.util.logging.Logger;
 
 public class PubSubFunction implements CloudEventsFunction {
   private static final Logger logger = Logger.getLogger(PubSubFunction.class.getName());
-  private final String API_KEY="024ce93a526ef27542a01d7018601717";
 
   public void accept(CloudEvent event) throws  IOException {
     // Get cloud event data as JSON string
@@ -67,6 +66,8 @@ public class PubSubFunction implements CloudEventsFunction {
     String VerificationToken=generateVerificationToken(email);
 
     CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+//    String API_KEY = "8681e2ca40b80860ade66544d58da93e-309b0ef4-7dab6103";
+    String API_KEY=System.getenv("API_KEY");
     credentialsProvider.setCredentials(
             new AuthScope("api.mailgun.net", 443),
             new UsernamePasswordCredentials("api", API_KEY));
