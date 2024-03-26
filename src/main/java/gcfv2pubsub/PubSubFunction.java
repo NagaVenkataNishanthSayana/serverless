@@ -49,8 +49,10 @@ public class PubSubFunction implements CloudEventsFunction {
     // Parse the decoded JSON string to extract the email
     JsonObject jsonObject = gson.fromJson(decodedData, JsonObject.class);
     String email = jsonObject.get("userName").getAsString();
+    String firstName = jsonObject.get("first_name").getAsString();
+    String lastName = jsonObject.get("last_name").getAsString();
     logger.info("email:"+email);
-    sendSimpleMessage(email);
+    sendSimpleMessage(email,firstName,lastName);
     // Log the message
     logger.info("Pub/Sub testing message: " + decodedData);
   }
@@ -61,7 +63,7 @@ public class PubSubFunction implements CloudEventsFunction {
     return Base64.getEncoder().encodeToString(token.getBytes());
   }
 
-  public void sendSimpleMessage(String email) throws IOException {
+  public void sendSimpleMessage(String email, String firstName, String lastName) throws IOException {
     String endpoint = "https://api.mailgun.net/v3/cloudnish.me/messages";
     String VerificationToken=generateVerificationToken(email);
 
@@ -83,7 +85,7 @@ public class PubSubFunction implements CloudEventsFunction {
     String verificationLink="http://localhost:8080/v1/user/authenticate?verificationToken="+VerificationToken;
     String htmlContent = "<html>"
             + "<body>"
-            + "<h1>Welcome to our service!</h1>"
+            + "<h1>Welcome to CloudNish, "+firstName+" "+lastName+"!</h1>"
             + "<p>Thank you for signing up. Please click the following link to verify your email:</p>"
             + "<a href=\"" + verificationLink + "\">Verify Email</a>"
             + "<p>If you are unable to click the link, you can copy and paste it into your browser's address bar.</p>"
@@ -91,7 +93,7 @@ public class PubSubFunction implements CloudEventsFunction {
             + "</body>"
             + "</html>";
     // Set request body
-    String requestBody = "from=Cloudnish Admin User <admin@cloudnish.me>"
+    String requestBody = "from=Cloudnish Support <admin@cloudnish.me>"
             + "&to="+email
             + "&subject=Email verification"
             + "&html="+htmlContent;
