@@ -85,11 +85,13 @@ public class PubSubFunction implements CloudEventsFunction {
     String verificationLink="http://localhost:8080/v1/user/authenticate?verificationToken="+VerificationToken;
     String htmlContent = "<html>"
             + "<body>"
-            + "<h1>Welcome to CloudNish, "+firstName+" "+lastName+"!</h1>"
+            + "<h1>Welcome to Cloud Nish, "+firstName+" "+lastName+" !</h1>"
             + "<p>Thank you for signing up. Please click the following link to verify your email:</p>"
             + "<a href=\"" + verificationLink + "\">Verify Email</a>"
             + "<p>If you are unable to click the link, you can copy and paste it into your browser's address bar.</p>"
             + "<p>We're excited to have you on board!</p>"
+            + "<h3>Thanks<h3>"
+            + "<p>Cloud Nish team</p>"
             + "</body>"
             + "</html>";
     // Set request body
@@ -119,7 +121,7 @@ public class PubSubFunction implements CloudEventsFunction {
     httpClient.close();
   }
 
-  public void insertEmailLog(String userEmail, boolean sent) {
+  public void insertEmailLog(String userEmail, boolean emailDeliveryFlag) {
 
     String username = System.getenv("DB_USERNAME");
     String password = System.getenv("DB_PASSWORD");
@@ -139,7 +141,7 @@ public class PubSubFunction implements CloudEventsFunction {
 
       pstmt.setString(1, uuid.toString());
       pstmt.setString(2, userEmail);
-      pstmt.setBoolean(3, sent);
+      pstmt.setBoolean(3, emailDeliveryFlag);
 
       pstmt.executeUpdate();
     } catch (SQLException e) {
