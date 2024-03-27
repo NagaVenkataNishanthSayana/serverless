@@ -95,7 +95,7 @@ public class PubSubFunction implements CloudEventsFunction {
             + "</body>"
             + "</html>";
     // Set request body
-    String requestBody = "from=Cloudnish Support <admin@cloudnish.me>"
+    String requestBody = "from=Cloudnish Support <support@cloudnish.me>"
             + "&to="+email
             + "&subject=Email verification"
             + "&html="+htmlContent;
