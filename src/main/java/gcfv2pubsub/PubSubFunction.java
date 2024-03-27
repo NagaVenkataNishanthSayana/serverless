@@ -20,10 +20,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Objects;
@@ -33,6 +31,7 @@ import java.util.logging.Logger;
 public class PubSubFunction implements CloudEventsFunction {
   private static final Logger logger = Logger.getLogger(PubSubFunction.class.getName());
 
+  private static Timestamp expirationTime;
   public void accept(CloudEvent event) throws  IOException {
     // Get cloud event data as JSON string
     String cloudEventData = new String(Objects.requireNonNull(event.getData()).toBytes());
@@ -59,7 +58,9 @@ public class PubSubFunction implements CloudEventsFunction {
 
   private String generateVerificationToken(String email) {
     // Encode email and current timestamp into a token
-    String token = email + ":" + new Date().getTime();
+    long currentTimeMillis = new Date().getTime();
+    expirationTime = new Timestamp(currentTimeMillis + (2 * 60 * 1000));
+    String token = email + ":" + currentTimeMillis;
     return Base64.getEncoder().encodeToString(token.getBytes());
   }
 
@@ -109,10 +110,10 @@ public class PubSubFunction implements CloudEventsFunction {
       logger.info("Mailgun response:"+EntityUtils.toString(entity));
       if(response.getStatusLine().getStatusCode()==200){
 
-        insertEmailLog(email,true);
+        insertEmailLog(email,true,verificationLink);
         logger.info("Mail Successfully sent to "+email);
       }else if(response.getStatusLine().getStatusCode()==401){
-        insertEmailLog(email,false);
+        insertEmailLog(email,false,verificationLink);
         logger.info("Mail Not sent: Authorization error");
       }
     }
@@ -121,7 +122,7 @@ public class PubSubFunction implements CloudEventsFunction {
     httpClient.close();
   }
 
-  public void insertEmailLog(String userEmail, boolean emailDeliveryFlag) {
+  public void insertEmailLog(String userEmail, boolean emailDeliveryFlag,String verificationLink) {
 
     String username = System.getenv("DB_USERNAME");
     String password = System.getenv("DB_PASSWORD");
@@ -134,7 +135,10 @@ public class PubSubFunction implements CloudEventsFunction {
     UUID uuid = UUID.randomUUID();
 
 
-    String sql = "INSERT INTO email_logs (id,user_email, is_email_sent) VALUES (?, ?, ?)";
+    Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+
+
+    String sql = "INSERT INTO email_log (id,user_email, is_email_sent,time_stamp,verification_link,expiration_time) VALUES (?, ?, ?,?,?,?)";
 
     try (Connection conn = DriverManager.getConnection(url , username, password);
          PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -142,8 +146,32 @@ public class PubSubFunction implements CloudEventsFunction {
       pstmt.setString(1, uuid.toString());
       pstmt.setString(2, userEmail);
       pstmt.setBoolean(3, emailDeliveryFlag);
+      pstmt.setTimestamp(4, timestamp);
+      pstmt.setString(5, verificationLink);
+      pstmt.setTimestamp(6, expirationTime);
 
-      pstmt.executeUpdate();
+      int rowsEffected=pstmt.executeUpdate();
+      logger.info("Rows Effected:"+rowsEffected);
+
+      String selectSql = "SELECT * FROM email_log";
+      try (PreparedStatement selectPstmt = conn.prepareStatement(selectSql)) {
+        // Execute the SELECT query
+        ResultSet resultSet = selectPstmt.executeQuery();
+
+        // Process the result set
+        while (resultSet.next()) {
+          // Assuming your_table has columns "uuid", "user_email", "sent"
+          String resultUuid = resultSet.getString("id");
+          String resultUserEmail = resultSet.getString("user_email");
+          boolean resultSent = resultSet.getBoolean("is_email_sent");
+          Timestamp resultTimeStamp= resultSet.getTimestamp("time_stamp");
+          Timestamp expirationTimeStamp= resultSet.getTimestamp("expiration_time");
+          String verification = resultSet.getString("verification_link");
+
+
+          logger.info("UUID: " + resultUuid + ", User Email: " + resultUserEmail + ", Sent: " + resultSent+", Time stamp: "+resultTimeStamp+", Expiration Time stamp: "+expirationTimeStamp+", Verification Link: "+verification);
+        }
+      }
     } catch (SQLException e) {
       e.printStackTrace(); // Handle or log the exception properly
     }
