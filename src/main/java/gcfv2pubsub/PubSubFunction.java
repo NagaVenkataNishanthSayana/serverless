@@ -82,7 +82,7 @@ public class PubSubFunction implements CloudEventsFunction {
     // Create POST request
     HttpPost httpPost = new HttpPost(endpoint);
 
-    String verificationLink="http://cloudnish.me:8080/v1/user/authenticate?verificationToken="+VerificationToken;
+    String verificationLink="https://cloudnish.me/v1/user/authenticate?verificationToken="+VerificationToken;
     String htmlContent = "<html>"
             + "<body>"
             + "<h1>Welcome to Cloud Nish, "+firstName+" "+lastName+" !</h1>"
