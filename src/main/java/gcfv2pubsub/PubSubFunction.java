@@ -64,11 +64,10 @@ public class PubSubFunction implements CloudEventsFunction {
   }
 
   public void sendSimpleMessage(String email, String firstName, String lastName) throws IOException {
-    String endpoint = "https://api.mailgun.net/v3/cloudnish.me/messages";
+    String endpoint = System.getenv("MAILGUN_ENDPOINT");
     String VerificationToken=generateVerificationToken(email);
 
     CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-//    String API_KEY = "8681e2ca40b80860ade66544d58da93e-309b0ef4-7dab6103";
     String API_KEY=System.getenv("API_KEY");
     credentialsProvider.setCredentials(
             new AuthScope("api.mailgun.net", 443),
@@ -81,8 +80,8 @@ public class PubSubFunction implements CloudEventsFunction {
 
     // Create POST request
     HttpPost httpPost = new HttpPost(endpoint);
-
-    String verificationLink="https://cloudnish.me/v1/user/authenticate?verificationToken="+VerificationToken;
+    String verificationEndPoint = System.getenv("VERIFICATION_ENDPOINT");
+    String verificationLink=verificationEndPoint+VerificationToken;
     String htmlContent = "<html>"
             + "<body>"
             + "<h1>Welcome to Cloud Nish, "+firstName+" "+lastName+" !</h1>"
